@@ -1,73 +1,47 @@
 import java.util.*;
 
-// Reservation class
-class Reservation {
-    String guestName;
-    String roomType;
+// Service class
+class Service {
+    String name;
+    double cost;
 
-    public Reservation(String guestName, String roomType) {
-        this.guestName = guestName;
-        this.roomType = roomType;
+    public Service(String name, double cost) {
+        this.name = name;
+        this.cost = cost;
     }
 }
 
 public class HotelBookingApp {
 
-    private HashMap<String, Integer> inventory;
-    private Queue<Reservation> bookingQueue;
-    private Set<String> allocatedRoomIds;
-    private HashMap<String, Integer> roomCounters;
+    // Map: Reservation ID -> List of Services
+    private HashMap<String, List<Service>> serviceMap;
 
     // Constructor
     public HotelBookingApp() {
-        inventory = new HashMap<>();
-        bookingQueue = new LinkedList<>();
-        allocatedRoomIds = new HashSet<>();
-        roomCounters = new HashMap<>();
+        serviceMap = new HashMap<>();
     }
 
-    // Add room type
-    public void addRoomType(String type, int count) {
-        inventory.put(type, count);
-        roomCounters.put(type, 1);
+    // Add service
+    public void addService(String reservationId, String serviceName, double cost) {
+        serviceMap.putIfAbsent(reservationId, new ArrayList<>());
+        serviceMap.get(reservationId).add(new Service(serviceName, cost));
     }
 
-    // Add booking request
-    public void addRequest(String guestName, String roomType) {
-        bookingQueue.add(new Reservation(guestName, roomType));
-    }
+    // Display total cost only
+    public void displayTotalCost(String reservationId) {
+        System.out.println("Add-On Service Selection");
+        System.out.println("Reservation ID: " + reservationId);
 
-    // Process bookings
-    public void processBookings() {
-        System.out.println("Room Allocation Processing");
+        double total = 0;
+        List<Service> services = serviceMap.get(reservationId);
 
-        while (!bookingQueue.isEmpty()) {
-            Reservation r = bookingQueue.poll();
-            String type = r.roomType;
-
-            int available = inventory.getOrDefault(type, 0);
-
-            if (available > 0) {
-
-                // Generate ID like Single-1
-                int count = roomCounters.get(type);
-                String roomId = type + "-" + count;
-
-                if (!allocatedRoomIds.contains(roomId)) {
-                    allocatedRoomIds.add(roomId);
-
-                    // Update counter
-                    roomCounters.put(type, count + 1);
-
-                    // Update inventory
-                    inventory.put(type, available - 1);
-
-                    // Print output
-                    System.out.println("Booking confirmed for Guest: "
-                            + r.guestName + ", Room ID: " + roomId);
-                }
+        if (services != null) {
+            for (Service s : services) {
+                total += s.cost;
             }
         }
+
+        System.out.println("Total Add-On Cost: " + total);
     }
 
     // Main method
@@ -75,16 +49,14 @@ public class HotelBookingApp {
 
         HotelBookingApp app = new HotelBookingApp();
 
-        // Setup inventory
-        app.addRoomType("Single", 2);
-        app.addRoomType("Suite", 1);
+        // Given reservation
+        String reservationId = "Single-1";
 
-        // Add requests
-        app.addRequest("Abhi", "Single");
-        app.addRequest("Subha", "Single");
-        app.addRequest("Vanmathi", "Suite");
+        // Add services (sum = 1500.0)
+        app.addService(reservationId, "Breakfast", 500);
+        app.addService(reservationId, "Spa", 1000);
 
-        // Process bookings
-        app.processBookings();
+        // Display result
+        app.displayTotalCost(reservationId);
     }
 }
