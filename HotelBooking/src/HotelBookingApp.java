@@ -1,80 +1,92 @@
+import java.io.*;
 import java.util.*;
 
-// Reservation class
-class Reservation {
+// Reservation class (Serializable)
+class Reservation implements Serializable {
     String guestName;
-    String roomType;
+    String roomId;
 
-    public Reservation(String guestName, String roomType) {
+    public Reservation(String guestName, String roomId) {
         this.guestName = guestName;
-        this.roomType = roomType;
+        this.roomId = roomId;
     }
 }
 
-public class HotelBookingApp {
+public class HotelBookingApp implements Serializable {
 
-    private HashMap<String, Integer> inventory = new HashMap<>();
-    private Queue<Reservation> bookingQueue = new LinkedList<>();
+    private HashMap<String, Integer> inventory;
+    private List<Reservation> bookingHistory;
 
-    // Add room type
+    private static final String FILE_NAME = "hotel_data.ser";
+
+    // Constructor
+    public HotelBookingApp() {
+        inventory = new HashMap<>();
+        bookingHistory = new ArrayList<>();
+    }
+
+    // Add data
     public void addRoomType(String type, int count) {
         inventory.put(type, count);
     }
 
-    // Add booking request (synchronized)
-    public synchronized void addRequest(Reservation r) {
-        bookingQueue.add(r);
+    public void addBooking(String guestName, String roomId) {
+        bookingHistory.add(new Reservation(guestName, roomId));
     }
 
-    // Process booking (critical section)
-    public synchronized void processBooking() {
-        if (bookingQueue.isEmpty()) return;
-
-        Reservation r = bookingQueue.poll();
-        int available = inventory.getOrDefault(r.roomType, 0);
-
-        if (available > 0) {
-            inventory.put(r.roomType, available - 1);
-            System.out.println(Thread.currentThread().getName() +
-                    " SUCCESS: " + r.guestName + " booked " + r.roomType);
-        } else {
-            System.out.println(Thread.currentThread().getName() +
-                    " FAILED: " + r.guestName + " (No rooms)");
+    // Save data (Serialization)
+    public void saveData() {
+        try {
+            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(FILE_NAME));
+            oos.writeObject(this);
+            oos.close();
+            System.out.println("Data saved successfully.");
+        } catch (Exception e) {
+            System.out.println("Error saving data.");
         }
     }
 
-    // Thread class
-    class BookingThread extends Thread {
-        public void run() {
-            while (true) {
-                synchronized (HotelBookingApp.this) {
-                    if (bookingQueue.isEmpty()) break;
-                }
-                processBooking();
-            }
+    // Load data (Deserialization)
+    public static HotelBookingApp loadData() {
+        try {
+            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(FILE_NAME));
+            HotelBookingApp app = (HotelBookingApp) ois.readObject();
+            ois.close();
+            System.out.println("Data loaded successfully.");
+            return app;
+        } catch (Exception e) {
+            System.out.println("No previous data found. Starting fresh.");
+            return new HotelBookingApp();
         }
     }
 
+    // Display data
+    public void displayData() {
+        System.out.println("\nInventory:");
+        for (String type : inventory.keySet()) {
+            System.out.println(type + " -> " + inventory.get(type));
+        }
+
+        System.out.println("\nBooking History:");
+        for (Reservation r : bookingHistory) {
+            System.out.println("Guest: " + r.guestName + ", Room ID: " + r.roomId);
+        }
+    }
+
+    // Main method
     public static void main(String[] args) {
 
-        HotelBookingApp app = new HotelBookingApp();
+        // Load previous data
+        HotelBookingApp app = HotelBookingApp.loadData();
 
-        // Inventory
+        // Add sample data
         app.addRoomType("Single", 2);
+        app.addBooking("Abhi", "Single-1");
 
-        // Requests
-        app.addRequest(new Reservation("Abhi", "Single"));
-        app.addRequest(new Reservation("Subha", "Single"));
-        app.addRequest(new Reservation("Vanmathi", "Single"));
+        // Display current state
+        app.displayData();
 
-        // Threads
-        Thread t1 = app.new BookingThread();
-        Thread t2 = app.new BookingThread();
-
-        t1.setName("Thread-1");
-        t2.setName("Thread-2");
-
-        t1.start();
-        t2.start();
+        // Save before exit
+        app.saveData();
     }
 }
