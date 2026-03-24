@@ -1,47 +1,44 @@
 import java.util.*;
 
-// Service class
-class Service {
-    String name;
-    double cost;
+// Reservation class
+class Reservation {
+    String guestName;
+    String roomId;
 
-    public Service(String name, double cost) {
-        this.name = name;
-        this.cost = cost;
+    public Reservation(String guestName, String roomId) {
+        this.guestName = guestName;
+        this.roomId = roomId;
     }
 }
 
 public class HotelBookingApp {
 
-    // Map: Reservation ID -> List of Services
-    private HashMap<String, List<Service>> serviceMap;
+    // List to maintain booking history
+    private List<Reservation> bookingHistory;
 
     // Constructor
     public HotelBookingApp() {
-        serviceMap = new HashMap<>();
+        bookingHistory = new ArrayList<>();
     }
 
-    // Add service
-    public void addService(String reservationId, String serviceName, double cost) {
-        serviceMap.putIfAbsent(reservationId, new ArrayList<>());
-        serviceMap.get(reservationId).add(new Service(serviceName, cost));
+    // Add confirmed booking
+    public void addBooking(String guestName, String roomId) {
+        bookingHistory.add(new Reservation(guestName, roomId));
     }
 
-    // Display total cost only
-    public void displayTotalCost(String reservationId) {
-        System.out.println("Add-On Service Selection");
-        System.out.println("Reservation ID: " + reservationId);
+    // Display booking history
+    public void displayHistory() {
+        System.out.println("Booking History");
 
-        double total = 0;
-        List<Service> services = serviceMap.get(reservationId);
-
-        if (services != null) {
-            for (Service s : services) {
-                total += s.cost;
-            }
+        for (Reservation r : bookingHistory) {
+            System.out.println("Guest: " + r.guestName + ", Room ID: " + r.roomId);
         }
+    }
 
-        System.out.println("Total Add-On Cost: " + total);
+    // Generate report
+    public void generateReport() {
+        System.out.println("\nBooking Report");
+        System.out.println("Total Bookings: " + bookingHistory.size());
     }
 
     // Main method
@@ -49,14 +46,15 @@ public class HotelBookingApp {
 
         HotelBookingApp app = new HotelBookingApp();
 
-        // Given reservation
-        String reservationId = "Single-1";
+        // Sample confirmed bookings
+        app.addBooking("Abhi", "Single-1");
+        app.addBooking("Subha", "Single-2");
+        app.addBooking("Vanmathi", "Suite-1");
 
-        // Add services (sum = 1500.0)
-        app.addService(reservationId, "Breakfast", 500);
-        app.addService(reservationId, "Spa", 1000);
+        // Show history
+        app.displayHistory();
 
-        // Display result
-        app.displayTotalCost(reservationId);
+        // Show report
+        app.generateReport();
     }
 }
