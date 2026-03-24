@@ -1,19 +1,21 @@
 import java.util.*;
 
-// Custom Exception
-class InvalidBookingException extends Exception {
-    public InvalidBookingException(String message) {
-        super(message);
-    }
-}
-
 public class HotelBookingApp {
 
+    // Inventory: roomType -> available count
     private HashMap<String, Integer> inventory;
+
+    // Active bookings: roomId -> roomType
+    private HashMap<String, String> activeBookings;
+
+    // Stack for rollback (LIFO)
+    private Stack<String> rollbackStack;
 
     // Constructor
     public HotelBookingApp() {
         inventory = new HashMap<>();
+        activeBookings = new HashMap<>();
+        rollbackStack = new Stack<>();
     }
 
     // Add room type
@@ -21,33 +23,42 @@ public class HotelBookingApp {
         inventory.put(type, count);
     }
 
-    // Validate booking
-    public void validateBooking(String roomType) throws InvalidBookingException {
-
-        // Check if room type exists
-        if (!inventory.containsKey(roomType)) {
-            throw new InvalidBookingException("Invalid room type: " + roomType);
-        }
-
-        // Check availability
-        if (inventory.get(roomType) <= 0) {
-            throw new InvalidBookingException("No rooms available for: " + roomType);
+    // Confirm booking (simple allocation)
+    public void confirmBooking(String roomId, String roomType) {
+        if (inventory.containsKey(roomType) && inventory.get(roomType) > 0) {
+            inventory.put(roomType, inventory.get(roomType) - 1);
+            activeBookings.put(roomId, roomType);
+            System.out.println("Booking confirmed: " + roomId);
         }
     }
 
-    // Process booking safely
-    public void bookRoom(String guestName, String roomType) {
-        try {
-            validateBooking(roomType);
+    // Cancel booking with rollback
+    public void cancelBooking(String roomId) {
 
-            // Update inventory only if valid
-            inventory.put(roomType, inventory.get(roomType) - 1);
-
-            System.out.println("Booking successful for " + guestName + " (" + roomType + ")");
-
-        } catch (InvalidBookingException e) {
-            System.out.println("Booking failed: " + e.getMessage());
+        // Validate existence
+        if (!activeBookings.containsKey(roomId)) {
+            System.out.println("Cancellation failed: Invalid Room ID " + roomId);
+            return;
         }
+
+        // Get room type
+        String roomType = activeBookings.get(roomId);
+
+        // Push to rollback stack
+        rollbackStack.push(roomId);
+
+        // Remove booking
+        activeBookings.remove(roomId);
+
+        // Restore inventory
+        inventory.put(roomType, inventory.get(roomType) + 1);
+
+        System.out.println("Booking cancelled: " + roomId);
+    }
+
+    // Show rollback stack
+    public void showRollbackStack() {
+        System.out.println("Rollback Stack: " + rollbackStack);
     }
 
     // Main method
@@ -56,16 +67,19 @@ public class HotelBookingApp {
         HotelBookingApp app = new HotelBookingApp();
 
         // Setup inventory
-        app.addRoomType("Single", 1);
-        app.addRoomType("Double", 0);
+        app.addRoomType("Single", 2);
 
-        // Valid booking
-        app.bookRoom("Abhi", "Single");
+        // Confirm bookings
+        app.confirmBooking("Single-1", "Single");
+        app.confirmBooking("Single-2", "Single");
 
-        // Invalid: no availability
-        app.bookRoom("Subha", "Double");
+        // Cancel booking
+        app.cancelBooking("Single-2");
 
-        // Invalid: wrong type
-        app.bookRoom("Vanmathi", "Suite");
+        // Invalid cancellation
+        app.cancelBooking("Single-3");
+
+        // Show rollback
+        app.showRollbackStack();
     }
 }
